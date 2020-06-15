@@ -63,13 +63,13 @@ d_a1 <- d %>%
   
 d_a2 <- d %>%
   group_by(year, month, hour,
-           inCBSA) %>%
+           CBSA) %>%
   summarize(sumcount = sum(count, na.rm = F),
             n = n())
 
 
 
-ggplot(d_a2 %>% filter(inCBSA == TRUE), 
+ggplot(d_a2 %>% filter(CBSA == TRUE), 
        aes(x = hour,
            y = sumcount,
            color = year)) +
@@ -98,7 +98,7 @@ ggsave(file = file.path('Example_Hourly_OH_In_Central_CSA.jpeg'),
        width = 8, height = 6)
 
 
-ggplot(d_a2 %>% filter(inCBSA == FALSE), 
+ggplot(d_a2 %>% filter(CBSA == FALSE), 
        aes(x = hour,
            y = sumcount,
            color = year)) +
