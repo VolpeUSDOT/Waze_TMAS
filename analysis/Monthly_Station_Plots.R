@@ -70,15 +70,18 @@ sta$Station_Id = paste(lead_zeros, sta$Station_Id, sep = "")
 # Join station and monthly count data
 # TO-DO: Check which of the 260 stations do not have corresponding counts
 # (only 217 station Ids in volume data)
-
 sta_month <- sta %>%
   left_join(month_vol, by = c('Station_Id', 'Travel_Dir'))
             
 sta_month %>% head(10) %>% View()
 
+# Make spatial points df from stations
+sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
+                                                    sta$Latitude),
+                                sta,
+                                proj4string = CRS("+proj=longlat +datum=WGS84"))
+
 # NEXT STEPS
-# --> Aggregate over stations' travel lanes if same direction
-# --> Create spatial points df using station coordinates
 # --> Create rectangular buffer around stations. Can use HPMS segments to check accuracy?
 # ---> [Do SDC Query]
 # ---> Import and join queried Waze data
