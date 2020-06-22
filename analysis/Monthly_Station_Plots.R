@@ -35,7 +35,7 @@ for(i in 1:length(vol_files)){
 
 # Get monthly counts
 month_vol <- vol %>%
-  group_by(Station_Id, Travel_Dir, Travel_Lane, Year_Record, Month_Record) %>%
+  group_by(Station_Id, Travel_Dir, Year_Record, Month_Record) %>%
   summarise(Month_Count = sum(Count))
 
 # Pivot wider by month
@@ -58,6 +58,10 @@ sta <- sta %>%
 
 plot(sta$Longitude, sta$Latitude)
 
+# Collapse over lane data
+sta <- sta %>%
+  select(-Travel_Lane) %>% distinct()
+
 # Add leading zeros to Station Id
 lead_zeros = strrep("0", 6-nchar(sta$Station_Id))
 sta$Station_Id = paste(lead_zeros, sta$Station_Id, sep = "")
@@ -66,9 +70,9 @@ sta$Station_Id = paste(lead_zeros, sta$Station_Id, sep = "")
 # Join station and monthly count data
 # TO-DO: Check which of the 260 stations do not have corresponding counts
 # (only 217 station Ids in volume data)
-sta_month <- sta %>%
-  left_join(month_vol, by = c('Station_Id', 'Travel_Dir','Travel_Lane'))
 
+sta_month <- sta %>%
+  left_join(month_vol, by = c('Station_Id', 'Travel_Dir'))
             
 sta_month %>% head(10) %>% View()
 
