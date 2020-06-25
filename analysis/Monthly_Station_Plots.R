@@ -63,8 +63,8 @@ sta <- sta %>%
   select(-Travel_Lane) %>% distinct()
 
 # Add leading zeros to Station Id
-lead_zeros = strrep("0", 6-nchar(sta$Station_Id))
-sta$Station_Id = paste(lead_zeros, sta$Station_Id, sep = "")
+lead_zeros <- strrep("0", 6-nchar(sta$Station_Id))
+sta$Station_Id <- paste(lead_zeros, sta$Station_Id, sep = "")
 
 
 # Join station and monthly count data
@@ -81,8 +81,39 @@ sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
                                 sta,
                                 proj4string = CRS("+proj=longlat +datum=WGS84"))
 
+
+# Create circular buffer around each station
+# Note: If station is two-way, each direction has its own entry
+
+# Import HPMS segments
+
+# Use station buffer to clip segments
+
+# Join segments to stations according to HPMS ID
+
+# Create a buffer region (w/ flat cap) around each segment
+
+
+### Alternative Buffer Approach #1: ####
+# Network-Constrained Service Area:
+# --> Import HPMS segments
+# --> Create an HPMS segment-constrained service area with "buffdist" radius around each station
+# --> Use the buffer shapes (whether polygon or line output) to clip the HPMS segments
+# --> Join clipped segments to station according to HPMS ID
+# --> Create a buffer region (w/ flat cap) around each segment
+
+
+### Alternative Buffer Approach #2: ####
+# Create Polylines Using Traffic Direction:
+# --> Calculate linear buffer's endpoints using flow of traffic (approximate) and "buffdist"
+# --> Create a buffer region (w/ flat cap) around each line segment
+# --> Maybe add some extra width to accommodate imprecision in flow direction
+
+
+
+
+
 # NEXT STEPS
-# --> Create rectangular buffer around stations. Can use HPMS segments to check accuracy?
 # ---> [Do SDC Query]
 # ---> Import and join queried Waze data
 # --> Plot monthly count of Waze alerts versus monthly traffic counts
