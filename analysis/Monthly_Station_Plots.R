@@ -84,11 +84,13 @@ sta_month <- sta %>%
 sta_month %>% head(10) %>% View()
 
 
-# Make spatial points df from stations
+# Make spatial points df from stations with monthly counts
 sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
                                                     sta$Latitude),
-                                sta,
+                                sta_month,
                                 proj4string = CRS("+proj=longlat +datum=WGS84"))
+
+sta_s@data %>% head()
 
 
 # Import HPMS segments
@@ -107,13 +109,13 @@ plot(hpms, add=TRUE, col='red', lwd=1.5)
 
 
 # Keep only segments that match with a station
-hpms_subset <- hpms[hpms$HPMS_SAMPL %in% sta$Sample_Id, ]
+hpms_subset <- hpms[hpms$HPMS_SAMPL %in% sta_s$Sample_Id, ]
 
 plot(sta_s, axes=TRUE)
 plot(hpms_subset, add=TRUE, col='red', lwd=1.5)
 
 
-# Create station buffer and clip segments to desired length
+# Create station buffer, and clip segments to desired length
 buffdist <- 0.03 # Placeholder number. Need to figure out units (degrees?)
 circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
 circbuff <- SpatialPolygonsDataFrame(circbuff, data=circbuff@data)
@@ -127,11 +129,18 @@ plot(hpms_subset)
 plot(hpms_clipped)
 
 
+# Create a buffer rectangle around each HPMS clip
+rect_width = 0.01 # Placeholder. Not sure what units these are.
+segments <- gBuffer(hpms_clipped, width=rect_width, id=Station_Id)
+plot(segments)
 
-# Create a buffer region (w/ flat cap) around each segment
+
+## TODO: How to include Station_IDs in buffer rectangles?
+## May have to just do a spatial join
 
 
-### Alternative (and Better) Buffer Approach #1: ####
+
+### Alternative Buffer Approach #1: ####
 # Network-Constrained Service Area:
 # --> Import HPMS segments
 # --> Create an HPMS segment-constrained service area with "buffdist" radius around each station
