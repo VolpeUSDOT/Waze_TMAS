@@ -84,21 +84,31 @@ sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
 
 # Create circular buffer around each station
 # Note: If station is two-way, each direction has its own 
-
-buffdist <- 0.1 # Temp number. Need to figure out units (degrees?)
+buffdist <- 0.05 # Placeholder number. Need to figure out units (degrees?)
 circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
-plot(sta_s)
-plot(circbuff, add=TRUE)
-# circbuff <- SpatialPolygonsDataFrame(circbuff,
-#                                            data = data.frame(Station = paste0(i, "buff"),
-#                                                             row.names = 'buffer'))
-plot(circbuff)
+circbuff <- SpatialPolygonsDataFrame(circbuff, data=circbuff@data)
+
 
 # Import HPMS segments
 hpms.loc <- paste(input.loc, "/ODOT/HPMS_Segments", sep="")
 hpms <- rgdal::readOGR(hpms.loc, layer = "WGIS_ROAD_INVENTORY_HPMSSegments")
+summary(hpms)
+
+# Projection to same system buffer polygons
+hpms <- spTransform(hpms, CRS("+proj=longlat +datum=WGS84"))
+hpms@proj4string
+
+
+plot(sta_s, axes=TRUE)
+plot(circbuff, add=TRUE, border='red')
+plot(hpms, add=TRUE, col='blue')
 
 # Use station buffer to clip segments
+clipped <- gIntersection(circbuff, hpms, byid = TRUE)
+
+plot(sta_s, axes=TRUE)
+plot(circbuff, add=TRUE, border='red')
+plot(clipped, add=TRUE, col = 'blue')
 
 # Join segments to stations according to HPMS ID
 
