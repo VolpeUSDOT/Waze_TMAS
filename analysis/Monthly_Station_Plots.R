@@ -83,9 +83,20 @@ sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
 
 
 # Create circular buffer around each station
-# Note: If station is two-way, each direction has its own entry
+# Note: If station is two-way, each direction has its own 
+
+buffdist <- 0.1 # Temp number. Need to figure out units (degrees?)
+circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
+plot(sta_s)
+plot(circbuff, add=TRUE)
+# circbuff <- SpatialPolygonsDataFrame(circbuff,
+#                                            data = data.frame(Station = paste0(i, "buff"),
+#                                                             row.names = 'buffer'))
+plot(circbuff)
 
 # Import HPMS segments
+hpms.loc <- paste(input.loc, "/ODOT/HPMS_Segments", sep="")
+hpms <- rgdal::readOGR(hpms.loc, layer = "WGIS_ROAD_INVENTORY_HPMSSegments")
 
 # Use station buffer to clip segments
 
@@ -94,7 +105,7 @@ sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
 # Create a buffer region (w/ flat cap) around each segment
 
 
-### Alternative Buffer Approach #1: ####
+### Alternative (and Better) Buffer Approach #1: ####
 # Network-Constrained Service Area:
 # --> Import HPMS segments
 # --> Create an HPMS segment-constrained service area with "buffdist" radius around each station
