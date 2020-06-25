@@ -10,8 +10,10 @@ library(lubridate)
 library(rgdal)
 library(rgeos)
 library(sp)
+library(raster)
 
 input.loc = 'Data'
+
 
 # Import and combine traffic count data
 vol_files <- dir(file.path(input.loc, 'TMAS', 'Volume'))
@@ -38,11 +40,13 @@ month_vol <- vol %>%
   group_by(Station_Id, Travel_Dir, Year_Record, Month_Record) %>%
   summarise(Month_Count = sum(Count))
 
+
 # Pivot wider by month
 month_vol <- month_vol %>%
   pivot_wider(names_from = c("Year_Record","Month_Record"),
               values_from = c("Month_Count"),
               names_prefix = "YM_")
+
 
 # Get station information
 sta <- read_csv(file.path(input.loc, 'TMAS', 'Station', 'OH 2019 (TMAS - STA).CSV'))
@@ -58,14 +62,18 @@ sta <- sta %>%
 
 plot(sta$Longitude, sta$Latitude)
 
+
 # Collapse over lane data
 sta <- sta %>%
   select(-Travel_Lane) %>% distinct()
 
-# Add leading zeros to Station Id
+
+# Add leading zeros to Station ID and HPMS Sample ID
 lead_zeros <- strrep("0", 6-nchar(sta$Station_Id))
 sta$Station_Id <- paste(lead_zeros, sta$Station_Id, sep = "")
 
+lead_zeros <- strrep("0", 12-nchar(sta$Sample_Id))
+sta$Sample_Id <- paste(lead_zeros, sta$Sample_Id, sep = "")
 
 # Join station and monthly count data
 # TO-DO: Check which of the 260 stations do not have corresponding counts
@@ -75,6 +83,7 @@ sta_month <- sta %>%
             
 sta_month %>% head(10) %>% View()
 
+
 # Make spatial points df from stations
 sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
                                                     sta$Latitude),
@@ -82,35 +91,42 @@ sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
                                 proj4string = CRS("+proj=longlat +datum=WGS84"))
 
 
-# Create circular buffer around each station
-# Note: If station is two-way, each direction has its own 
-buffdist <- 0.05 # Placeholder number. Need to figure out units (degrees?)
-circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
-circbuff <- SpatialPolygonsDataFrame(circbuff, data=circbuff@data)
-
-
 # Import HPMS segments
 hpms.loc <- paste(input.loc, "/ODOT/HPMS_Segments", sep="")
 hpms <- rgdal::readOGR(hpms.loc, layer = "WGIS_ROAD_INVENTORY_HPMSSegments")
 summary(hpms)
 
-# Projection to same system buffer polygons
+
+# Projection to same system as station points
 hpms <- spTransform(hpms, CRS("+proj=longlat +datum=WGS84"))
 hpms@proj4string
 
 
 plot(sta_s, axes=TRUE)
-plot(circbuff, add=TRUE, border='red')
-plot(hpms, add=TRUE, col='blue')
+plot(hpms, add=TRUE, col='red', lwd=1.5)
 
-# Use station buffer to clip segments
-clipped <- gIntersection(circbuff, hpms, byid = TRUE)
+
+# Keep only segments that match with a station
+hpms_subset <- hpms[hpms$HPMS_SAMPL %in% sta$Sample_Id, ]
 
 plot(sta_s, axes=TRUE)
-plot(circbuff, add=TRUE, border='red')
-plot(clipped, add=TRUE, col = 'blue')
+plot(hpms_subset, add=TRUE, col='red', lwd=1.5)
 
-# Join segments to stations according to HPMS ID
+
+# Create station buffer and clip segments to desired length
+buffdist <- 0.03 # Placeholder number. Need to figure out units (degrees?)
+circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
+circbuff <- SpatialPolygonsDataFrame(circbuff, data=circbuff@data)
+
+plot(sta_s, axes=TRUE)
+plot(circbuff, add=TRUE, border='lightblue')
+
+hpms_clipped <- intersect(hpms_subset, circbuff)
+
+plot(hpms_subset)
+plot(hpms_clipped)
+
+
 
 # Create a buffer region (w/ flat cap) around each segment
 
