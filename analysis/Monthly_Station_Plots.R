@@ -65,7 +65,7 @@ plot(sta$Longitude, sta$Latitude)
 
 # Collapse over lane data
 sta <- sta %>%
-  select(-Travel_Lane) %>% distinct()
+  dplyr::select(-Travel_Lane) %>% distinct()
 
 
 # Add leading zeros to Station ID and HPMS Sample ID
