@@ -49,6 +49,7 @@ month_vol <- month_vol %>%
 
 
 # Get station information
+# Sample_Id: Make sure not represented in scientific notation
 sta <- read_csv(file.path(input.loc, 'TMAS', 'Station', 'OH 2019 (TMAS - STA).CSV'))
 
 sta <- sta %>%
@@ -69,7 +70,10 @@ sta <- sta %>%
 
 
 # Add leading zeros to Station ID and HPMS Sample ID
-lead_zeros <- strrep("0", 6-nchar(sta$Station_Id))
+
+
+
+lead_zeros <- strrep("0", 6 - nchar(sta$Station_Id))
 sta$Station_Id <- paste(lead_zeros, sta$Station_Id, sep = "")
 
 lead_zeros <- strrep("0", 12-nchar(sta$Sample_Id))
@@ -109,7 +113,10 @@ plot(hpms, add=TRUE, col='red', lwd=1.5)
 
 
 # Keep only segments that match with a station
+
 hpms_subset <- hpms[hpms$HPMS_SAMPL %in% sta_s$Sample_Id, ]
+
+#sta_s[!hpms$HPMS_SAMPL %in% sta_s$Sample_Id,]
 
 plot(sta_s, axes=TRUE)
 plot(hpms_subset, add=TRUE, col='red', lwd=1.5)
