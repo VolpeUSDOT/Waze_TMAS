@@ -131,9 +131,13 @@ plot(hpms_clipped)
 
 # Create a buffer rectangle around each HPMS clip
 rect_width = 0.01 # Placeholder. Not sure what units these are.
-segments <- gBuffer(hpms_clipped, width=rect_width, id=Station_Id)
+#segments <- gBuffer(hpms_clipped, width=rect_width, byid=TRUE, id=hpms_clipped$Station_Id)
+segments <- gBuffer(hpms_clipped, width=rect_width)
 plot(segments)
 
+segments <- SpatialPolygonsDataFrame(segments, data = hpms_clipped@data)
+writeOGR(obj=segments, dsn='input.loc\tempdir', layer='segments',
+         driver='ESRI Shapefile')
 
 ## TODO: How to include Station_IDs in buffer rectangles?
 ## May have to just do a spatial join
