@@ -149,15 +149,9 @@ plot(hpms_clipped)
 # Create a buffer rectangle around each HPMS clip
 rect_width = 0.5 * 1609.344 # half-mile buffer, in meters
 
-segments <- gBuffer(hpms_clipped, width = rect_width)
+# use byid = TRUE so that the result is not a single polygon (with multiple elements), but rather each individual polygon with the ID variable preserved. The output is now a spatial polygons data frame, with all data values preserved
+segments <- gBuffer(hpms_clipped, width = rect_width, byid = TRUE)
 plot(segments)
-
-# TODO: Fix this... SpatialPolygons is a list of Polygons, need at create SPDF correclty, below is a hack which doesn't quite work.. 
-
-xx <- SpatialPolygonsDataFrame(segments, data = hpms_clipped@data)
-
-class(segments) = 'SpatialPolygonsDataFrame'
-segments@data = hpms_clipped@data
 
 if(!dir.exists(file.path(input.loc, 'tempdir'))){
   dir.create(file.path(input.loc, 'tempdir'))
@@ -168,10 +162,6 @@ writeOGR(obj = segments,
          layer = 'segments',
          driver = 'ESRI Shapefile',
          overwrite_layer = T)
-
-## TODO: How to include Station_IDs in buffer rectangles?
-## May have to just do a spatial join
-
 
 
 ### Alternative Buffer Approach #1: ####
