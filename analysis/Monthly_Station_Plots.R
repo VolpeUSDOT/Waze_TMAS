@@ -1,7 +1,7 @@
 # Volume of Waze alerts by month vs. TMAS counts by month
 # Statewide for OH
 
-# Setup
+# Setup ----
 
 source('utility/get_packages.R')
 
@@ -15,7 +15,7 @@ library(raster)
 input.loc = 'Data'
 
 
-# Import and combine traffic count data
+# Import and combine traffic count data ----
 vol_files <- dir(file.path(input.loc, 'TMAS', 'Volume'))
 
 vol <- vector()
@@ -52,6 +52,10 @@ month_vol <- month_vol %>%
 # Sample_Id: Make sure not represented in scientific notation
 sta <- read_csv(file.path(input.loc, 'TMAS', 'Station', 'OH 2019 (TMAS - STA).CSV'))
 
+if(any(grepl('E+', sta$Sample_Id))){
+  stop('Scientific notation in Sample_Id column, fix before proceeding')
+}
+
 sta <- sta %>%
   mutate(Latitude = as.numeric(paste(substr(Latitude, 1, 2),
                                      substr(Latitude, 3, nchar(Latitude)), 
@@ -71,22 +75,19 @@ sta <- sta %>%
 
 # Add leading zeros to Station ID and HPMS Sample ID
 
-
-
 lead_zeros <- strrep("0", 6 - nchar(sta$Station_Id))
 sta$Station_Id <- paste(lead_zeros, sta$Station_Id, sep = "")
 
 lead_zeros <- strrep("0", 12-nchar(sta$Sample_Id))
 sta$Sample_Id <- paste(lead_zeros, sta$Sample_Id, sep = "")
 
-# Join station and monthly count data
+# Join station and monthly count data ----
 # TO-DO: Check which of the 260 stations do not have corresponding counts
 # (only 217 station Ids in volume data)
 sta_month <- sta %>%
   left_join(month_vol, by = c('Station_Id', 'Travel_Dir'))
             
-sta_month %>% head(10) %>% View()
-
+# sta_month %>% head(10) %>% View()
 
 # Make spatial points df from stations with monthly counts
 sta_s <- SpatialPointsDataFrame(coords = data.frame(sta$Longitude,
@@ -116,14 +117,24 @@ plot(hpms, add=TRUE, col='red', lwd=1.5)
 
 hpms_subset <- hpms[hpms$HPMS_SAMPL %in% sta_s$Sample_Id, ]
 
-#sta_s[!hpms$HPMS_SAMPL %in% sta_s$Sample_Id,]
+# How many station observations are we losing by not matching with an HPMS segment? Most of them...
+nrow(sta_s[!sta_s$Sample_Id %in% hpms$HPMS_SAMPL,])
 
 plot(sta_s, axes=TRUE)
-plot(hpms_subset, add=TRUE, col='red', lwd=1.5)
+plot(hpms_subset, add=TRUE, col='red', lwd = 3)
 
+# Reproject station points and HPMS segments in meters ----
+
+# USGS version of Albers Equal Area projection: 
+proj.USGS <- "+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0"
+
+sta_s <- spTransform(sta_s, CRS(proj.USGS))
+
+hpms_subset <- spTransform(hpms_subset, CRS(proj.USGS))
 
 # Create station buffer, and clip segments to desired length
-buffdist <- 0.03 # Placeholder number. Need to figure out units (degrees?)
+buffdist <- 1 * 1609.344 # units are meters in shapefiles, here get one mile in meters
+
 circbuff <- gBuffer(sta_s, width=buffdist, byid=TRUE)
 circbuff <- SpatialPolygonsDataFrame(circbuff, data=circbuff@data)
 
@@ -135,16 +146,28 @@ hpms_clipped <- intersect(hpms_subset, circbuff)
 plot(hpms_subset)
 plot(hpms_clipped)
 
-
 # Create a buffer rectangle around each HPMS clip
-rect_width = 0.01 # Placeholder. Not sure what units these are.
-#segments <- gBuffer(hpms_clipped, width=rect_width, byid=TRUE, id=hpms_clipped$Station_Id)
-segments <- gBuffer(hpms_clipped, width=rect_width)
+rect_width = 0.5 * 1609.344 # half-mile buffer, in meters
+
+segments <- gBuffer(hpms_clipped, width = rect_width)
 plot(segments)
 
-segments <- SpatialPolygonsDataFrame(segments, data = hpms_clipped@data)
-writeOGR(obj=segments, dsn='input.loc\tempdir', layer='segments',
-         driver='ESRI Shapefile')
+# TODO: Fix this... SpatialPolygons is a list of Polygons, need at create SPDF correclty, below is a hack which doesn't quite work.. 
+
+xx <- SpatialPolygonsDataFrame(segments, data = hpms_clipped@data)
+
+class(segments) = 'SpatialPolygonsDataFrame'
+segments@data = hpms_clipped@data
+
+if(!dir.exists(file.path(input.loc, 'tempdir'))){
+  dir.create(file.path(input.loc, 'tempdir'))
+}
+
+writeOGR(obj = segments, 
+         dsn = file.path(input.loc,'tempdir'), 
+         layer = 'segments',
+         driver = 'ESRI Shapefile',
+         overwrite_layer = T)
 
 ## TODO: How to include Station_IDs in buffer rectangles?
 ## May have to just do a spatial join

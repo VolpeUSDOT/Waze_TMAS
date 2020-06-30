@@ -6,6 +6,7 @@ loadpacks <- c(
   "foreach",
   "kableExtra",
   "knitr",
+  "raster",
   "rgdal",
   "rgeos",
   "sp",
