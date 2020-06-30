@@ -153,12 +153,12 @@ rect_width = 0.5 * 1609.344 # half-mile buffer, in meters
 segments <- gBuffer(hpms_clipped, width = rect_width, byid = TRUE)
 plot(segments)
 
-if(!dir.exists(file.path(input.loc, 'tempdir'))){
-  dir.create(file.path(input.loc, 'tempdir'))
+if(!dir.exists(file.path(input.loc, 'Buffers'))){
+  dir.create(file.path(input.loc, 'Buffers'))
 }
 
 writeOGR(obj = segments, 
-         dsn = file.path(input.loc,'tempdir'), 
+         dsn = file.path(input.loc,'Buffers'), 
          layer = 'segments',
          driver = 'ESRI Shapefile',
          overwrite_layer = T)
