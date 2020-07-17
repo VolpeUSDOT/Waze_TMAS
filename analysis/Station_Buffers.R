@@ -11,6 +11,7 @@ library(rgdal)
 library(rgeos)
 library(sp)
 library(raster)
+library(zip)
 
 input.loc = 'Data'
 
@@ -163,6 +164,15 @@ writeOGR(obj = segments,
          driver = 'ESRI Shapefile',
          overwrite_layer = T)
 
+# And zip the segments file
+# Skip any existing zip file
+files_to_zip = dir(file.path(input.loc,'Buffers'))
+files_to_zip = files_to_zip[!grepl('zip$', files_to_zip)]
+
+zipr(zipfile = file.path(input.loc, 'Buffers', 'segments_1.zip'),
+    files = file.path(input.loc,'Buffers', files_to_zip))
+
+# Then manually upload to SDC for Waze query
 
 ### Alternative Buffer Approach #1: ####
 # Network-Constrained Service Area:

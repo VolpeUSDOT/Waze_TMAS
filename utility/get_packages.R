@@ -11,7 +11,8 @@ loadpacks <- c(
   "rgeos",
   "sp",
   "tidyverse",
-  "usmap"
+  "usmap",
+  "zip"
   )
 
 for(i in loadpacks){
